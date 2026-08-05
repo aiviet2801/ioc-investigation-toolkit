@@ -1,10 +1,28 @@
 import ipaddress
 import os
+from models.report import Report
 
 from dotenv import load_dotenv
 
-from services.virustotal import get_ip_report
+from services.abuseipdb import get_ip_report as get_abuseipdb_report
+from services.virustotal import get_ip_report as get_virustotal_report
+
 from utils.logger import log
+
+from datetime import datetime
+
+
+def format_datetime(datetime_string):
+    if not datetime_string:
+        return "N/A"
+
+    try:
+        dt = datetime.fromisoformat(datetime_string.replace("Z", "+00:00"))
+
+        return dt.strftime("%Y-%m-%d %H:%M UTC")
+
+    except ValueError:
+        return datetime_string
 
 
 def validate_ip_address(ip_address):
@@ -19,19 +37,41 @@ def validate_ip_address(ip_address):
     return True, ""
 
 
-def build_report(ip_address, attributes):
-    stats = attributes.get("last_analysis_stats", {})
+def build_report(ip_address, vt_attributes, abuse_data):
+    vt_attributes = vt_attributes or {}
+    abuse_data = abuse_data or {}
+    stats = vt_attributes.get("last_analysis_stats", {})
 
-    return {
-        "ip": ip_address,
-        "country": attributes.get("country", "N/A"),
-        "owner": attributes.get("as_owner", "N/A"),
-        "asn": attributes.get("asn", "N/A"),
-        "reputation": attributes.get("reputation", "N/A"),
-        "malicious": stats.get("malicious", 0),
-        "harmless": stats.get("harmless", 0),
-        "undetected": stats.get("undetected", 0),
-    }
+    report = Report()
+
+    report.ip = ip_address
+
+    report.country = (
+        vt_attributes.get("country") or abuse_data.get("countryCode") or "N/A"
+    )
+
+    report.owner = vt_attributes.get("as_owner") or abuse_data.get("isp") or "N/A"
+
+    report.asn = vt_attributes.get("asn") or abuse_data.get("asn") or "N/A"
+
+    report.reputation = vt_attributes.get("reputation", "N/A")
+    report.malicious = stats.get("malicious", 0)
+    report.harmless = stats.get("harmless", 0)
+    report.undetected = stats.get("undetected", 0)
+
+    report.abuse_score = abuse_data.get(
+        "abuseConfidenceScore",
+        0,
+    )
+
+    report.total_reports = abuse_data.get(
+        "totalReports",
+        0,
+    )
+
+    report.last_reported_at = format_datetime(abuse_data.get("lastReportedAt"))
+
+    return report
 
 
 def print_report(report):
@@ -49,10 +89,13 @@ def print_report(report):
         "malicious": "Malicious",
         "harmless": "Harmless",
         "undetected": "Undetected",
+        "abuse_score": "Abuse Score",
+        "total_reports": "Total Reports",
+        "last_reported_at": "Last Reported",
     }
 
     for key, label in labels.items():
-        print(f"{label:11}: {report[key]}")
+        print(f"{label:14}: {getattr(report, key)}")
 
     print("=" * 40)
 
@@ -60,16 +103,22 @@ def print_report(report):
 def main():
     load_dotenv()
 
-    api_key = os.getenv("VT_API_KEY")
+    vt_api_key = os.getenv("VT_API_KEY")
+    abuse_api_key = os.getenv("ABUSEIPDB_API_KEY")
 
-    if not api_key:
+    if not vt_api_key:
         log(
             "ERROR",
             "Không tìm thấy VT_API_KEY trong file .env.",
         )
         return
+    log("INFO", f"API Key loaded (...{vt_api_key[-6:]})")
 
-    log("INFO", f"API Key loaded (...{api_key[-6:]})")
+    if not abuse_api_key:
+        log("ERROR", "Không tìm thấy ABUSEIPDB_API_KEY trong file .env.")
+        return
+
+    log("INFO", f"API Key loaded (...{abuse_api_key[-6:]})")
 
     ip_address = input("Nhập địa chỉ IP cần kiểm tra: ").strip()
 
@@ -79,18 +128,24 @@ def main():
         log("ERROR", error_message)
         return
 
-    attributes = get_ip_report(
+    vt_attributes = get_virustotal_report(
         ip_address,
-        api_key,
+        vt_api_key,
     )
 
-    if attributes is None:
-        log("ERROR", "Không thể tạo báo cáo.")
+    abuse_data = get_abuseipdb_report(
+        ip_address,
+        abuse_api_key,
+    )
+
+    if vt_attributes is None and abuse_data is None:
+        log("ERROR", " Cả VirusTotal và AbuseIPDE đều không trả dữ liệu.")
         return
 
     report = build_report(
         ip_address,
-        attributes,
+        vt_attributes,
+        abuse_data,
     )
 
     print_report(report)
