@@ -1,15 +1,14 @@
 import ipaddress
 import os
-from models.report import Report
+from datetime import datetime
 
 from dotenv import load_dotenv
 
+from models.report import Report
 from services.abuseipdb import get_ip_report as get_abuseipdb_report
 from services.virustotal import get_ip_report as get_virustotal_report
-
+from utils.ioc_detector import detect_ioc_type
 from utils.logger import log
-
-from datetime import datetime
 
 
 def format_datetime(datetime_string):
@@ -28,6 +27,7 @@ def format_datetime(datetime_string):
 def validate_ip_address(ip_address):
     try:
         parsed_ip = ipaddress.ip_address(ip_address)
+
     except ValueError:
         return False, "Địa chỉ IP không hợp lệ."
 
@@ -40,6 +40,7 @@ def validate_ip_address(ip_address):
 def build_report(ip_address, vt_attributes, abuse_data):
     vt_attributes = vt_attributes or {}
     abuse_data = abuse_data or {}
+
     stats = vt_attributes.get("last_analysis_stats", {})
 
     report = Report()
@@ -54,7 +55,11 @@ def build_report(ip_address, vt_attributes, abuse_data):
 
     report.asn = vt_attributes.get("asn") or abuse_data.get("asn") or "N/A"
 
-    report.reputation = vt_attributes.get("reputation", "N/A")
+    report.reputation = vt_attributes.get(
+        "reputation",
+        "N/A",
+    )
+
     report.malicious = stats.get("malicious", 0)
     report.harmless = stats.get("harmless", 0)
     report.undetected = stats.get("undetected", 0)
@@ -100,28 +105,7 @@ def print_report(report):
     print("=" * 40)
 
 
-def main():
-    load_dotenv()
-
-    vt_api_key = os.getenv("VT_API_KEY")
-    abuse_api_key = os.getenv("ABUSEIPDB_API_KEY")
-
-    if not vt_api_key:
-        log(
-            "ERROR",
-            "Không tìm thấy VT_API_KEY trong file .env.",
-        )
-        return
-    log("INFO", f"API Key loaded (...{vt_api_key[-6:]})")
-
-    if not abuse_api_key:
-        log("ERROR", "Không tìm thấy ABUSEIPDB_API_KEY trong file .env.")
-        return
-
-    log("INFO", f"API Key loaded (...{abuse_api_key[-6:]})")
-
-    ip_address = input("Nhập địa chỉ IP cần kiểm tra: ").strip()
-
+def investigate_ip(ip_address, vt_api_key, abuse_api_key):
     is_valid, error_message = validate_ip_address(ip_address)
 
     if not is_valid:
@@ -139,7 +123,10 @@ def main():
     )
 
     if vt_attributes is None and abuse_data is None:
-        log("ERROR", " Cả VirusTotal và AbuseIPDE đều không trả dữ liệu.")
+        log(
+            "ERROR",
+            "Cả VirusTotal và AbuseIPDB đều không trả dữ liệu.",
+        )
         return
 
     report = build_report(
@@ -149,6 +136,52 @@ def main():
     )
 
     print_report(report)
+
+
+def main():
+    load_dotenv()
+
+    vt_api_key = os.getenv("VT_API_KEY")
+    abuse_api_key = os.getenv("ABUSEIPDB_API_KEY")
+
+    if not vt_api_key:
+        log(
+            "ERROR",
+            "Không tìm thấy VT_API_KEY trong file .env.",
+        )
+        return
+
+    if not abuse_api_key:
+        log(
+            "ERROR",
+            "Không tìm thấy ABUSEIPDB_API_KEY trong file .env.",
+        )
+        return
+
+    log("INFO", f"VirusTotal API Key loaded (...{vt_api_key[-6:]})")
+    log(
+        "INFO",
+        f"AbuseIPDB API Key loaded (...{abuse_api_key[-6:]})",
+    )
+
+    ioc_value = input("Nhập IOC cần kiểm tra: ").strip()
+
+    ioc_type = detect_ioc_type(ioc_value)
+
+    log("INFO", f"IOC Type detected: {ioc_type}")
+
+    if ioc_type == "IP":
+        investigate_ip(
+            ioc_value,
+            vt_api_key,
+            abuse_api_key,
+        )
+
+    else:
+        log(
+            "ERROR",
+            (f"IOC type '{ioc_type}' chưa được hỗ trợ " "trong phiên bản hiện tại."),
+        )
 
 
 if __name__ == "__main__":
