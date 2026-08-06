@@ -19,6 +19,8 @@ from services.virustotal import (
 
 from exporters.html_report import export_html_report
 
+from exporters.pdf_report import export_pdf_report
+
 IP_LABELS = {
     "ip": "IP Address",
     "country": "Country",
@@ -377,6 +379,18 @@ def investigate_ip(ip_address, vt_api_key, abuse_api_key):
         f"HTML report exported: {html_path}",
     )
 
+    pdf_path = export_pdf_report(
+        "IOC Investigation Report",
+        "IP",
+        ["VirusTotal", "AbuseIPDB"],
+        html_data,
+    )
+
+    log(
+        "INFO",
+        f"PDF report exported: {pdf_path}",
+    )
+
 
 def investigate_domain(domain, vt_api_key):
     attributes = get_domain_report(
@@ -413,6 +427,18 @@ def investigate_domain(domain, vt_api_key):
     log(
         "INFO",
         f"HTML report exported: {html_path}",
+    )
+
+    pdf_path = export_pdf_report(
+        "Domain Investigation Report",
+        "DOMAIN",
+        ["VirusTotal"],
+        html_data,
+    )
+
+    log(
+        "INFO",
+        f"PDF report exported: {pdf_path}",
     )
 
 
@@ -453,6 +479,18 @@ def investigate_url(url_value, vt_api_key):
         f"HTML report exported: {html_path}",
     )
 
+    pdf_path = export_pdf_report(
+        "URL Investigation Report",
+        "URL",
+        ["VirusTotal"],
+        html_data,
+    )
+
+    log(
+        "INFO",
+        f"PDF report exported: {pdf_path}",
+    )
+
 
 def investigate_hash(file_hash, hash_type, vt_api_key):
     attributes = get_hash_report(
@@ -490,6 +528,18 @@ def investigate_hash(file_hash, hash_type, vt_api_key):
     log(
         "INFO",
         f"HTML report exported: {html_path}",
+    )
+
+    pdf_path = export_pdf_report(
+        "Hash Investigation Report",
+        hash_type,
+        ["VirusTotal"],
+        html_data,
+    )
+
+    log(
+        "INFO",
+        f"PDF report exported: {pdf_path}",
     )
 
 
