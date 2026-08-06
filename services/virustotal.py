@@ -48,3 +48,63 @@ def get_ip_report(ip_address, api_key):
         return None
 
     return attributes
+
+
+def get_domain_report(domain, api_key):
+    url = "https://www.virustotal.com/api/v3/" f"domains/{domain}"
+
+    headers = {
+        "accept": "application/json",
+        "x-apikey": api_key,
+    }
+
+    log("INFO", "Đang gửi yêu cầu domain tới VirusTotal...")
+
+    try:
+        response = requests.get(
+            url,
+            headers=headers,
+            timeout=15,
+        )
+
+        response.raise_for_status()
+
+    except requests.exceptions.Timeout:
+        log("ERROR", "Yêu cầu domain bị quá thời gian chờ.")
+        return None
+
+    except requests.exceptions.ConnectionError:
+        log("ERROR", "Không thể kết nối tới VirusTotal.")
+        return None
+
+    except requests.exceptions.HTTPError:
+        log(
+            "ERROR",
+            f"VirusTotal domain trả lỗi HTTP: {response.status_code}",
+        )
+        return None
+
+    except requests.exceptions.RequestException as error:
+        log(
+            "ERROR",
+            f"Lỗi khi gửi yêu cầu domain: {error}",
+        )
+        return None
+
+    log(
+        "INFO",
+        f"VirusTotal Domain HTTP Status: {response.status_code}",
+    )
+
+    try:
+        json_data = response.json()
+        attributes = json_data["data"]["attributes"]
+
+    except (ValueError, KeyError, TypeError):
+        log(
+            "ERROR",
+            "Dữ liệu domain VirusTotal trả về không hợp lệ.",
+        )
+        return None
+
+    return attributes

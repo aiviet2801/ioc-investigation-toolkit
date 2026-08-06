@@ -10,6 +10,11 @@ from services.virustotal import get_ip_report as get_virustotal_report
 from utils.ioc_detector import detect_ioc_type
 from utils.logger import log
 
+from services.virustotal import (
+    get_domain_report,
+    get_ip_report as get_virustotal_report,
+)
+
 
 def format_datetime(datetime_string):
     if not datetime_string:
@@ -79,6 +84,25 @@ def build_report(ip_address, vt_attributes, abuse_data):
     return report
 
 
+def build_domain_report(domain, attributes):
+    attributes = attributes or {}
+
+    stats = attributes.get("last_analysis_stats", {})
+
+    return {
+        "domain": domain,
+        "reputation": attributes.get("reputation", "N/A"),
+        "malicious": stats.get("malicious", 0),
+        "harmless": stats.get("harmless", 0),
+        "suspicious": stats.get("suspicious", 0),
+        "undetected": stats.get("undetected", 0),
+        "registrar": attributes.get("registrar", "N/A"),
+        "creation_date": attributes.get("creation_date", "N/A"),
+        "expiration_date": attributes.get("expiration_date", "N/A"),
+        "tags": attributes.get("tags", []),
+    }
+
+
 def print_report(report):
     print()
     print("=" * 40)
@@ -101,6 +125,32 @@ def print_report(report):
 
     for key, label in labels.items():
         print(f"{label:14}: {getattr(report, key)}")
+
+    print("=" * 40)
+
+
+def print_domain_report(report):
+    print()
+    print("=" * 40)
+    print("Domain Investigation Report")
+    print("=" * 40)
+
+    print(f"{'Domain':15}: {report['domain']}")
+    print(f"{'Reputation':15}: {report['reputation']}")
+    print(f"{'Malicious':15}: {report['malicious']}")
+    print(f"{'Harmless':15}: {report['harmless']}")
+    print(f"{'Suspicious':15}: {report['suspicious']}")
+    print(f"{'Undetected':15}: {report['undetected']}")
+    print(f"{'Registrar':15}: {report['registrar']}")
+    print(f"{'Creation Date':15}: {report['creation_date']}")
+    print(f"{'Expiration Date':15}: {report['expiration_date']}")
+
+    tags = report["tags"]
+
+    if tags:
+        print(f"{'Tags':15}: {', '.join(tags)}")
+    else:
+        print(f"{'Tags':15}: N/A")
 
     print("=" * 40)
 
@@ -136,6 +186,27 @@ def investigate_ip(ip_address, vt_api_key, abuse_api_key):
     )
 
     print_report(report)
+
+
+def investigate_domain(domain, vt_api_key):
+    attributes = get_domain_report(
+        domain,
+        vt_api_key,
+    )
+
+    if attributes is None:
+        log(
+            "ERROR",
+            "VirusTotal không trả dữ liệu domain.",
+        )
+        return
+
+    report = build_domain_report(
+        domain,
+        attributes,
+    )
+
+    print_domain_report(report)
 
 
 def main():
@@ -175,6 +246,12 @@ def main():
             ioc_value,
             vt_api_key,
             abuse_api_key,
+        )
+
+    elif ioc_type == "DOMAIN":
+        investigate_domain(
+            ioc_value,
+            vt_api_key,
         )
 
     else:
