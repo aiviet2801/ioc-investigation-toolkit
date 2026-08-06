@@ -17,6 +17,69 @@ from services.virustotal import (
     get_url_report,
 )
 
+from exporters.html_report import export_html_report
+
+IP_LABELS = {
+    "ip": "IP Address",
+    "country": "Country",
+    "owner": "Owner",
+    "asn": "ASN",
+    "reputation": "Reputation",
+    "malicious": "Malicious",
+    "harmless": "Harmless",
+    "undetected": "Undetected",
+    "abuse_score": "Abuse Score",
+    "total_reports": "Total Reports",
+    "last_reported_at": "Last Reported",
+}
+
+
+DOMAIN_LABELS = {
+    "domain": "Domain",
+    "reputation": "Reputation",
+    "malicious": "Malicious",
+    "harmless": "Harmless",
+    "suspicious": "Suspicious",
+    "undetected": "Undetected",
+    "registrar": "Registrar",
+    "creation_date": "Creation Date",
+    "expiration_date": "Expiration Date",
+    "tags": "Tags",
+}
+
+
+URL_LABELS = {
+    "url": "URL",
+    "final_url": "Final URL",
+    "title": "Title",
+    "reputation": "Reputation",
+    "malicious": "Malicious",
+    "harmless": "Harmless",
+    "suspicious": "Suspicious",
+    "undetected": "Undetected",
+    "status_code": "Status Code",
+    "content_type": "Content Type",
+}
+
+
+HASH_LABELS = {
+    "input_hash": "Input Hash",
+    "hash_type": "Hash Type",
+    "meaningful_name": "Meaningful Name",
+    "type_description": "File Type",
+    "size": "File Size",
+    "md5": "MD5",
+    "sha1": "SHA1",
+    "sha256": "SHA256",
+    "reputation": "Reputation",
+    "malicious": "Malicious",
+    "harmless": "Harmless",
+    "suspicious": "Suspicious",
+    "undetected": "Undetected",
+    "times_submitted": "Times Submitted",
+    "tags": "Tags",
+}
+
 
 def format_datetime(datetime_string):
     if not datetime_string:
@@ -111,22 +174,8 @@ def print_report(report):
     print("IOC Investigation Report")
     print("=" * 40)
 
-    labels = {
-        "ip": "IP Address",
-        "country": "Country",
-        "owner": "Owner",
-        "asn": "ASN",
-        "reputation": "Reputation",
-        "malicious": "Malicious",
-        "harmless": "Harmless",
-        "undetected": "Undetected",
-        "abuse_score": "Abuse Score",
-        "total_reports": "Total Reports",
-        "last_reported_at": "Last Reported",
-    }
-
-    for key, label in labels.items():
-        print(f"{label:14}: {getattr(report, key)}")
+    for key, label in IP_LABELS.items():
+        print(f"{label:16}: {getattr(report, key)}")
 
     print("=" * 40)
 
@@ -163,21 +212,13 @@ def print_url_report(report):
     print("URL Investigation Report")
     print("=" * 40)
 
-    labels = {
-        "url": "URL",
-        "final_url": "Final URL",
-        "title": "Title",
-        "reputation": "Reputation",
-        "malicious": "Malicious",
-        "harmless": "Harmless",
-        "suspicious": "Suspicious",
-        "undetected": "Undetected",
-        "status_code": "Status Code",
-        "content_type": "Content Type",
-    }
+    for key, label in URL_LABELS.items():
+        value = report.get(key, "N/A")
 
-    for key, label in labels.items():
-        print(f"{label:15}: {report[key]}")
+        if isinstance(value, list):
+            value = ", ".join(value) or "N/A"
+
+        print(f"{label:16}: {value}")
 
     print("=" * 40)
 
@@ -216,6 +257,20 @@ def print_hash_report(report):
         print(f"{'Tags':16}: N/A")
 
     print("=" * 40)
+
+
+def build_html_data(report, labels):
+    html_data = {}
+
+    for key, label in labels.items():
+        if isinstance(report, dict):
+            value = report.get(key, "N/A")
+        else:
+            value = getattr(report, key, "N/A")
+
+        html_data[label] = value
+
+    return html_data
 
 
 def build_url_report(url_value, attributes):
@@ -296,6 +351,32 @@ def investigate_ip(ip_address, vt_api_key, abuse_api_key):
 
     print_report(report)
 
+    html_data = {
+        "IP Address": report.ip,
+        "Country": report.country,
+        "Owner": report.owner,
+        "ASN": report.asn,
+        "Reputation": report.reputation,
+        "Malicious": report.malicious,
+        "Harmless": report.harmless,
+        "Undetected": report.undetected,
+        "Abuse Score": report.abuse_score,
+        "Total Reports": report.total_reports,
+        "Last Reported": report.last_reported_at,
+    }
+
+    html_path = export_html_report(
+        "IOC Investigation Report",
+        "IP",
+        ["VirusTotal", "AbuseIPDB"],
+        html_data,
+    )
+
+    log(
+        "INFO",
+        f"HTML report exported: {html_path}",
+    )
+
 
 def investigate_domain(domain, vt_api_key):
     attributes = get_domain_report(
@@ -316,6 +397,23 @@ def investigate_domain(domain, vt_api_key):
     )
 
     print_domain_report(report)
+
+    html_data = build_html_data(
+        report,
+        DOMAIN_LABELS,
+    )
+
+    html_path = export_html_report(
+        "Domain Investigation Report",
+        "DOMAIN",
+        ["VirusTotal"],
+        html_data,
+    )
+
+    log(
+        "INFO",
+        f"HTML report exported: {html_path}",
+    )
 
 
 def investigate_url(url_value, vt_api_key):
@@ -338,6 +436,23 @@ def investigate_url(url_value, vt_api_key):
 
     print_url_report(report)
 
+    html_data = build_html_data(
+        report,
+        URL_LABELS,
+    )
+
+    html_path = export_html_report(
+        "URL Investigation Report",
+        "URL",
+        ["VirusTotal"],
+        html_data,
+    )
+
+    log(
+        "INFO",
+        f"HTML report exported: {html_path}",
+    )
+
 
 def investigate_hash(file_hash, hash_type, vt_api_key):
     attributes = get_hash_report(
@@ -359,6 +474,23 @@ def investigate_hash(file_hash, hash_type, vt_api_key):
     )
 
     print_hash_report(report)
+
+    html_data = build_html_data(
+        report,
+        HASH_LABELS,
+    )
+
+    html_path = export_html_report(
+        "Hash Investigation Report",
+        hash_type,
+        ["VirusTotal"],
+        html_data,
+    )
+
+    log(
+        "INFO",
+        f"HTML report exported: {html_path}",
+    )
 
 
 def main():
