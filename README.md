@@ -1,89 +1,164 @@
 # IOC Investigation Toolkit
 
 ## Why This Project?
-This project is built for learning software engineering through a real-world cybersecurity problem.
 
-Instead of learning Python syntax in isolation, every concept is learned while building a practical IOC investigation tool.
+This project is built to learn software engineering through a real-world cybersecurity problem.
+
+Instead of learning Python syntax in isolation, every concept is practiced while building a practical IOC investigation toolkit.
+
+---
 
 ## Project Goal
+
 IOC Investigation Toolkit is a personal learning project for building an OSINT investigation tool.
 
-The goal is to collect information about Indicators of Compromise (IOC) from multiple public intelligence sources and generate a unified investigation report.
+The objective is to investigate Indicators of Compromise (IOC) by collecting information from appropriate OSINT services and presenting the results in a consistent investigation report.
+
+---
 
 ## Learning Objectives
+
 This project is used to practice:
 
 - REST API integration
 - Software architecture
 - Object-oriented programming
 - OSINT investigation workflow
+- Software design patterns
 - Clean project organization
+- Git workflow
+
+---
 
 ## Current Features
-- Lookup IP address using VirusTotal
-- Lookup IP address using AbuseIPDB
+
+### IOC Detection
+
+- Detect IP Address
+- Detect Domain
+- Detect URL
+- Detect MD5
+- Detect SHA1
+- Detect SHA256
+
+### IP Investigation
+
+- VirusTotal
+- AbuseIPDB
+- Automatic service fallback
+
+### Domain Investigation
+
+- VirusTotal
+
+### URL Investigation
+
+- VirusTotal
+
+### General
+
 - Validate public/private IP
-- Merge multiple OSINT sources into one report
-- Service fallback
+- Normalize investigation data
 - Basic logging
+- Datetime formatting
+
+---
 
 ## Current Project Structure
+
+```text
 ioc-investigation-toolkit/
 
 ├── main.py
-
+├── README.md
+├── requirements.txt
+│
 ├── models/
-
+│   └── report.py
+│
 ├── services/
+│   ├── virustotal.py
+│   └── abuseipdb.py
+│
+└── utils/
+    ├── logger.py
+    └── ioc_detector.py
+```
 
-├── utils/
-
-└── README.md
+---
 
 ## Current Workflow
+
 ```text
-User Input
-    │
-    ▼
-Validate IOC
-    │
-    ▼
-VirusTotal
-    │
-    ▼
-AbuseIPDB
-    │
-    ▼
-Build Report
-    │
-    ▼
-Display Report
+                User Input
+                     │
+                     ▼
+          IOC Type Detection
+                     │
+        ┌────────────┼────────────┐
+        │            │            │
+        ▼            ▼            ▼
+        IP         DOMAIN        URL
+        │            │            │
+        ▼            ▼            ▼
+ VirusTotal     VirusTotal   VirusTotal
+        │
+        ▼
+ AbuseIPDB
+        │
+        └────────────┐
+                     ▼
+               Build Report
+                     │
+                     ▼
+             Display Report
 ```
+
+---
 
 ## Roadmap
 
 ### Completed
+
 - [x] Environment setup
-- [x] VirusTotal integration
+- [x] Git project initialization
+- [x] VirusTotal IP integration
 - [x] AbuseIPDB integration
 - [x] Report model
 - [x] Service fallback
 - [x] Datetime formatting
+- [x] IOC Type Detection
+- [x] Domain investigation
+- [x] URL investigation
 
-### Sprint 3
+### Sprint 5
 
-- [ ] IOC Type Detection
+- [ ] Hash investigation
+- [ ] SHA1 investigation
+- [ ] SHA256 investigation
+
+### Sprint 6
+
+- [ ] HTML report
+- [ ] PDF report
+
+---
 
 ## Design Principles
-- Keep one function responsible for one task.
-- Keep external services isolated.
+
+- One function should have one responsibility.
+- One service should communicate with one external API.
 - Normalize data before presenting it.
+- Prefer simple architecture.
 - Build first, optimize later.
-- Keep the project simple.
+- Keep modules independent.
+
+---
 
 ## Current Status
-Version: v0.2
 
-Current Sprint: Sprint 3
+Version: **v0.4**
 
-Status: In Progress
+Current Sprint: **Sprint 5**
+
+Status: **In Progress**

@@ -13,6 +13,7 @@ from utils.logger import log
 from services.virustotal import (
     get_domain_report,
     get_ip_report as get_virustotal_report,
+    get_url_report,
 )
 
 
@@ -155,6 +156,53 @@ def print_domain_report(report):
     print("=" * 40)
 
 
+def print_url_report(report):
+    print()
+    print("=" * 40)
+    print("URL Investigation Report")
+    print("=" * 40)
+
+    labels = {
+        "url": "URL",
+        "final_url": "Final URL",
+        "title": "Title",
+        "reputation": "Reputation",
+        "malicious": "Malicious",
+        "harmless": "Harmless",
+        "suspicious": "Suspicious",
+        "undetected": "Undetected",
+        "status_code": "Status Code",
+        "content_type": "Content Type",
+    }
+
+    for key, label in labels.items():
+        print(f"{label:15}: {report[key]}")
+
+    print("=" * 40)
+
+
+def build_url_report(url_value, attributes):
+    attributes = attributes or {}
+
+    stats = attributes.get("last_analysis_stats", {})
+
+    return {
+        "url": url_value,
+        "final_url": attributes.get("last_final_url", url_value),
+        "title": attributes.get("title", "N/A"),
+        "reputation": attributes.get("reputation", "N/A"),
+        "malicious": stats.get("malicious", 0),
+        "harmless": stats.get("harmless", 0),
+        "suspicious": stats.get("suspicious", 0),
+        "undetected": stats.get("undetected", 0),
+        "status_code": attributes.get("last_http_response_code", "N/A"),
+        "content_type": attributes.get(
+            "last_http_response_content_type",
+            "N/A",
+        ),
+    }
+
+
 def investigate_ip(ip_address, vt_api_key, abuse_api_key):
     is_valid, error_message = validate_ip_address(ip_address)
 
@@ -209,6 +257,27 @@ def investigate_domain(domain, vt_api_key):
     print_domain_report(report)
 
 
+def investigate_url(url_value, vt_api_key):
+    attributes = get_url_report(
+        url_value,
+        vt_api_key,
+    )
+
+    if attributes is None:
+        log(
+            "ERROR",
+            "VirusTotal không trả dữ liệu URL.",
+        )
+        return
+
+    report = build_url_report(
+        url_value,
+        attributes,
+    )
+
+    print_url_report(report)
+
+
 def main():
     load_dotenv()
 
@@ -250,6 +319,12 @@ def main():
 
     elif ioc_type == "DOMAIN":
         investigate_domain(
+            ioc_value,
+            vt_api_key,
+        )
+
+    elif ioc_type == "URL":
+        investigate_url(
             ioc_value,
             vt_api_key,
         )
