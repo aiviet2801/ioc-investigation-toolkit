@@ -173,3 +173,63 @@ def get_url_report(url_value, api_key):
         return None
 
     return attributes
+
+
+def get_hash_report(file_hash, api_key):
+    endpoint = "https://www.virustotal.com/api/v3/" f"files/{file_hash}"
+
+    headers = {
+        "accept": "application/json",
+        "x-apikey": api_key,
+    }
+
+    log("INFO", "Đang gửi yêu cầu hash tới VirusTotal...")
+
+    try:
+        response = requests.get(
+            endpoint,
+            headers=headers,
+            timeout=15,
+        )
+
+        response.raise_for_status()
+
+    except requests.exceptions.Timeout:
+        log("ERROR", "Yêu cầu hash bị quá thời gian chờ.")
+        return None
+
+    except requests.exceptions.ConnectionError:
+        log("ERROR", "Không thể kết nối tới VirusTotal.")
+        return None
+
+    except requests.exceptions.HTTPError:
+        log(
+            "ERROR",
+            f"VirusTotal hash trả lỗi HTTP: {response.status_code}",
+        )
+        return None
+
+    except requests.exceptions.RequestException as error:
+        log(
+            "ERROR",
+            f"Lỗi khi gửi yêu cầu hash: {error}",
+        )
+        return None
+
+    log(
+        "INFO",
+        f"VirusTotal Hash HTTP Status: {response.status_code}",
+    )
+
+    try:
+        json_data = response.json()
+        attributes = json_data["data"]["attributes"]
+
+    except (ValueError, KeyError, TypeError):
+        log(
+            "ERROR",
+            "Dữ liệu hash VirusTotal trả về không hợp lệ.",
+        )
+        return None
+
+    return attributes

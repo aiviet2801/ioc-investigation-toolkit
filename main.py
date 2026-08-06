@@ -12,6 +12,7 @@ from utils.logger import log
 
 from services.virustotal import (
     get_domain_report,
+    get_hash_report,
     get_ip_report as get_virustotal_report,
     get_url_report,
 )
@@ -181,6 +182,42 @@ def print_url_report(report):
     print("=" * 40)
 
 
+def print_hash_report(report):
+    print()
+    print("=" * 40)
+    print("Hash Investigation Report")
+    print("=" * 40)
+
+    labels = {
+        "input_hash": "Input Hash",
+        "hash_type": "Hash Type",
+        "meaningful_name": "Meaningful Name",
+        "type_description": "File Type",
+        "size": "File Size",
+        "md5": "MD5",
+        "sha1": "SHA1",
+        "sha256": "SHA256",
+        "reputation": "Reputation",
+        "malicious": "Malicious",
+        "harmless": "Harmless",
+        "suspicious": "Suspicious",
+        "undetected": "Undetected",
+        "times_submitted": "Times Submitted",
+    }
+
+    for key, label in labels.items():
+        print(f"{label:16}: {report[key]}")
+
+    tags = report["tags"]
+
+    if tags:
+        print(f"{'Tags':16}: {', '.join(tags)}")
+    else:
+        print(f"{'Tags':16}: N/A")
+
+    print("=" * 40)
+
+
 def build_url_report(url_value, attributes):
     attributes = attributes or {}
 
@@ -200,6 +237,30 @@ def build_url_report(url_value, attributes):
             "last_http_response_content_type",
             "N/A",
         ),
+    }
+
+
+def build_hash_report(file_hash, hash_type, attributes):
+    attributes = attributes or {}
+
+    stats = attributes.get("last_analysis_stats", {})
+
+    return {
+        "input_hash": file_hash,
+        "hash_type": hash_type,
+        "meaningful_name": attributes.get("meaningful_name", "N/A"),
+        "type_description": attributes.get("type_description", "N/A"),
+        "size": attributes.get("size", "N/A"),
+        "md5": attributes.get("md5", "N/A"),
+        "sha1": attributes.get("sha1", "N/A"),
+        "sha256": attributes.get("sha256", "N/A"),
+        "reputation": attributes.get("reputation", "N/A"),
+        "malicious": stats.get("malicious", 0),
+        "harmless": stats.get("harmless", 0),
+        "suspicious": stats.get("suspicious", 0),
+        "undetected": stats.get("undetected", 0),
+        "times_submitted": attributes.get("times_submitted", 0),
+        "tags": attributes.get("tags", []),
     }
 
 
@@ -278,6 +339,28 @@ def investigate_url(url_value, vt_api_key):
     print_url_report(report)
 
 
+def investigate_hash(file_hash, hash_type, vt_api_key):
+    attributes = get_hash_report(
+        file_hash,
+        vt_api_key,
+    )
+
+    if attributes is None:
+        log(
+            "ERROR",
+            "VirusTotal không trả dữ liệu hash.",
+        )
+        return
+
+    report = build_hash_report(
+        file_hash,
+        hash_type,
+        attributes,
+    )
+
+    print_hash_report(report)
+
+
 def main():
     load_dotenv()
 
@@ -326,6 +409,12 @@ def main():
     elif ioc_type == "URL":
         investigate_url(
             ioc_value,
+            vt_api_key,
+        )
+    elif ioc_type in {"MD5", "SHA1", "SHA256"}:
+        investigate_hash(
+            ioc_value,
+            ioc_type,
             vt_api_key,
         )
 
