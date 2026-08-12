@@ -1,4 +1,5 @@
 import os
+import threading
 import tkinter as tk
 from tkinter import messagebox, ttk
 
@@ -25,6 +26,22 @@ def main():
     root = tk.Tk()
     root.title("IOC Investigation Toolkit")
     root.geometry("900x600")
+
+    if not vt_api_key:
+        messagebox.showerror(
+            "Configuration Error",
+            "VT_API_KEY was not found in the .env file.",
+        )
+        root.destroy()
+        return
+
+    if not abuse_api_key:
+        messagebox.showerror(
+            "Configuration Error",
+            "ABUSEIPDB_API_KEY was not found in the .env file.",
+        )
+        root.destroy()
+        return
 
     main_frame = ttk.Frame(
         root,
@@ -83,55 +100,136 @@ def main():
         state="disabled",
     )
 
-    def run_investigation():
-        ioc_value = ioc_entry.get().strip()
+    result_scrollbar = ttk.Scrollbar(
+        result_frame,
+        orient="vertical",
+        command=result_text.yview,
+    )
 
-        if not ioc_value:
-            messagebox.showerror(
-                "Error",
-                "Please enter an IOC.",
-            )
-            return
+    result_text.config(
+        yscrollcommand=result_scrollbar.set,
+    )
 
-        result = investigate(
-            ioc_value,
-            vt_api_key,
-            abuse_api_key,
+    def get_labels(ioc_type):
+        if ioc_type == "IP":
+            return IP_LABELS
+
+        if ioc_type == "DOMAIN":
+            return DOMAIN_LABELS
+
+        if ioc_type == "URL":
+            return URL_LABELS
+
+        if ioc_type in {
+            "MD5",
+            "SHA1",
+            "SHA256",
+        }:
+            return HASH_LABELS
+
+        return None
+
+    def clear_result():
+        ioc_entry.delete(
+            0,
+            tk.END,
+        )
+
+        current_result["report"] = None
+        current_result["ioc_type"] = None
+        current_result["labels"] = None
+
+        result_text.config(
+            state="normal",
+        )
+
+        result_text.delete(
+            "1.0",
+            tk.END,
+        )
+
+        result_text.config(
+            state="disabled",
+        )
+
+        html_button.config(
+            state="disabled",
+        )
+
+        pdf_button.config(
+            state="disabled",
+        )
+
+        ioc_entry.focus_set()
+
+    def investigation_failed(error):
+        investigate_button.config(
+            state="normal",
+            text="Investigate",
+        )
+
+        html_button.config(
+            state="disabled",
+        )
+
+        pdf_button.config(
+            state="disabled",
+        )
+
+        messagebox.showerror(
+            "Investigation failed",
+            str(error),
+        )
+
+    def investigation_finished(result):
+        investigate_button.config(
+            state="normal",
+            text="Investigate",
         )
 
         if result.report is None:
+            html_button.config(
+                state="disabled",
+            )
+
+            pdf_button.config(
+                state="disabled",
+            )
+
             messagebox.showerror(
                 "Investigation failed",
                 ("Could not investigate IOC " f"type: {result.ioc_type}"),
             )
             return
 
-        if result.ioc_type == "IP":
-            labels = IP_LABELS
+        labels = get_labels(result.ioc_type)
 
-        elif result.ioc_type == "DOMAIN":
-            labels = DOMAIN_LABELS
+        if labels is None:
+            html_button.config(
+                state="disabled",
+            )
 
-        elif result.ioc_type == "URL":
-            labels = URL_LABELS
+            pdf_button.config(
+                state="disabled",
+            )
 
-        elif result.ioc_type in {
-            "MD5",
-            "SHA1",
-            "SHA256",
-        }:
-            labels = HASH_LABELS
-
-        else:
             messagebox.showerror(
                 "Error",
-                f"Unsupported IOC type: {result.ioc_type}",
+                ("Unsupported IOC type: " f"{result.ioc_type}"),
             )
             return
 
         current_result["report"] = result.report
         current_result["ioc_type"] = result.ioc_type
         current_result["labels"] = labels
+
+        html_button.config(
+            state="normal",
+        )
+
+        pdf_button.config(
+            state="normal",
+        )
 
         report_data = build_html_data(
             result.report,
@@ -164,6 +262,58 @@ def main():
         result_text.config(
             state="disabled",
         )
+
+    def run_investigation():
+        ioc_value = ioc_entry.get().strip()
+
+        if not ioc_value:
+            messagebox.showerror(
+                "Error",
+                "Please enter an IOC.",
+            )
+            return
+
+        current_result["report"] = None
+        current_result["ioc_type"] = None
+        current_result["labels"] = None
+
+        html_button.config(
+            state="disabled",
+        )
+
+        pdf_button.config(
+            state="disabled",
+        )
+
+        investigate_button.config(
+            state="disabled",
+            text="Investigating...",
+        )
+
+        def worker():
+            try:
+                result = investigate(
+                    ioc_value,
+                    vt_api_key,
+                    abuse_api_key,
+                )
+
+            except Exception as error:
+                root.after(
+                    0,
+                    lambda: investigation_failed(error),
+                )
+                return
+
+            root.after(
+                0,
+                lambda: investigation_finished(result),
+            )
+
+        threading.Thread(
+            target=worker,
+            daemon=True,
+        ).start()
 
     def export_html():
         if current_result["report"] is None:
@@ -221,13 +371,30 @@ def main():
             f"PDF report exported:\n{file_path}",
         )
 
-    investigate_button = ttk.Button(
+    button_frame = ttk.Frame(
         main_frame,
+    )
+    button_frame.pack(
+        anchor="w",
+    )
+
+    investigate_button = ttk.Button(
+        button_frame,
         text="Investigate",
         command=run_investigation,
     )
     investigate_button.pack(
-        anchor="w",
+        side="left",
+        padx=(0, 10),
+    )
+
+    clear_button = ttk.Button(
+        button_frame,
+        text="Clear",
+        command=clear_result,
+    )
+    clear_button.pack(
+        side="left",
     )
 
     export_frame = ttk.Frame(
@@ -242,6 +409,7 @@ def main():
         export_frame,
         text="Export HTML",
         command=export_html,
+        state="disabled",
     )
     html_button.pack(
         side="left",
@@ -252,6 +420,7 @@ def main():
         export_frame,
         text="Export PDF",
         command=export_pdf,
+        state="disabled",
     )
     pdf_button.pack(
         side="left",
@@ -263,10 +432,23 @@ def main():
         pady=(25, 0),
     )
 
+    result_scrollbar.pack(
+        side="right",
+        fill="y",
+    )
+
     result_text.pack(
+        side="left",
         fill="both",
         expand=True,
     )
+
+    root.bind(
+        "<Return>",
+        lambda event: run_investigation(),
+    )
+
+    ioc_entry.focus_set()
 
     root.mainloop()
 
