@@ -62,6 +62,10 @@ This project is used to practice:
 - Basic logging
 - Datetime formatting
 
+### Report Export
+
+- Export investigation report to HTML
+- Export investigation report to PDF
 ---
 
 ## Current Project Structure
@@ -130,6 +134,17 @@ ioc-investigation-toolkit/
 - [x] IOC Type Detection
 - [x] Domain investigation
 - [x] URL investigation
+- [x] Hash investigation
+- [x] MD5 investigation
+- [x] SHA1 investigation
+- [x] SHA256 investigation
+- [x] HTML report exporter
+- [x] IP HTML report
+- [x] Domain HTML report
+- [x] URL HTML report
+- [x] Hash HTML report
+- [x] HTML report export
+- [x] PDF report export
 
 ### Sprint 5
 
@@ -157,8 +172,8 @@ ioc-investigation-toolkit/
 
 ## Current Status
 
-Version: **v0.4**
+Version: v0.7
 
-Current Sprint: **Sprint 5**
+Current Sprint: Sprint 8
 
-Status: **In Progress**
+Status: In Progress
