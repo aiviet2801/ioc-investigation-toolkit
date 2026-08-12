@@ -32,6 +32,13 @@ This project is used to practice:
 
 ## Current Features
 
+### Desktop GUI
+
+- Investigate IP, Domain, URL, and Hash from the desktop interface
+- Display investigation results inside the application
+- Export investigation results to HTML
+- Export investigation results to PDF
+
 ### IOC Detection
 
 - Detect IP Address
@@ -87,6 +94,7 @@ ioc-investigation-toolkit/
 └── utils/
     ├── logger.py
     └── ioc_detector.py
+├── app.py
 ```
 
 ---
@@ -145,6 +153,12 @@ ioc-investigation-toolkit/
 - [x] Hash HTML report
 - [x] HTML report export
 - [x] PDF report export
+- [x] Desktop GUI MVP
+- [x] IOC input from GUI
+- [x] GUI integration with investigation core
+- [x] Investigation result display
+- [x] HTML export from GUI
+- [x] PDF export from GUI
 
 ### Sprint 5
 
@@ -172,8 +186,8 @@ ioc-investigation-toolkit/
 
 ## Current Status
 
-Version: v0.7
+Version: **v0.10**
 
-Current Sprint: Sprint 8
+Current Sprint: **Sprint 11**
 
-Status: In Progress
+Status: **In Progress**
