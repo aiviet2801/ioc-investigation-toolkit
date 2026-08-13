@@ -6,6 +6,10 @@ The application automatically detects the IOC type, queries supported threat-int
 
 The project was originally built as a hands-on software engineering and cybersecurity learning project.
 
+## Preview
+
+![IOC Investigation Toolkit desktop application](docs/images/gui-preview.png)
+
 ---
 
 ## Features
