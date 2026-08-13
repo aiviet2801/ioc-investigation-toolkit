@@ -57,8 +57,8 @@ def build_domain_report(domain, attributes):
         "suspicious": stats.get("suspicious", 0),
         "undetected": stats.get("undetected", 0),
         "registrar": attributes.get("registrar", "N/A"),
-        "creation_date": attributes.get("creation_date", "N/A"),
-        "expiration_date": attributes.get("expiration_date", "N/A"),
+        "creation_date": format_datetime(attributes.get("creation_date")),
+        "expiration_date": format_datetime(attributes.get("expiration_date")),
         "tags": attributes.get("tags", []),
     }
 
