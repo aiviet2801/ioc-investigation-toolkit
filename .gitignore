@@ -6,3 +6,13 @@ __pycache__/
 .idea/
 .DS_Store
 reports/
+# PyInstaller
+build/
+dist/
+*.spec
+
+# Runtime reports
+reports/
+
+# macOS
+.DS_Store

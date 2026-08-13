@@ -1,6 +1,7 @@
 from builders.report_builder import build_html_data
 from exporters.html_report import export_html_report
 from exporters.pdf_report import export_pdf_report
+from utils.path_utils import get_reports_directory
 
 REPORT_CONFIG = {
     "IP": {
@@ -46,12 +47,15 @@ def export_report(
         labels,
     )
 
+    output_directory = get_reports_directory()
+
     if export_format == "html":
         return export_html_report(
             config["title"],
             ioc_type,
             config["sources"],
             report_data,
+            output_directory=output_directory,
         )
 
     if export_format == "pdf":
@@ -60,6 +64,7 @@ def export_report(
             ioc_type,
             config["sources"],
             report_data,
+            output_directory=output_directory,
         )
 
     raise ValueError(f"Định dạng export không được hỗ trợ: {export_format}")

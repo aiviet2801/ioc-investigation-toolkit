@@ -159,6 +159,22 @@ ioc-investigation-toolkit/
 - [x] Investigation result display
 - [x] HTML export from GUI
 - [x] PDF export from GUI
+- [x] GUI busy state and background investigation
+- [x] GUI export state management
+- [x] Enter shortcut for investigation
+- [x] Clear / Reset workflow
+- [x] Scrollable investigation results
+- [x] Missing API key handling
+- [x] API failure handling
+- [x] IP service fallback validation
+- [x] GUI regression testing for IP, Domain, URL, and Hash
+- [x] macOS application packaging
+- [x] PyInstaller desktop build
+- [x] Custom macOS application icon
+- [x] External user configuration
+- [x] Standalone application execution
+- [x] User Documents report storage
+- [x] Packaged application regression testing
 
 ### Sprint 5
 
@@ -186,8 +202,8 @@ ioc-investigation-toolkit/
 
 ## Current Status
 
-Version: **v0.10**
+Version: **v0.12**
 
-Current Sprint: **Sprint 11**
+Current Sprint: **Sprint 13**
 
 Status: **In Progress**

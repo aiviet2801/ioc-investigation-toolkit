@@ -16,9 +16,16 @@ from presenters.console_report import (
     URL_LABELS,
 )
 
+from pathlib import Path
+
 
 def main():
-    load_dotenv()
+    config_path = Path.home() / ".ioc-investigation-toolkit" / ".env"
+
+    load_dotenv(
+        dotenv_path=config_path,
+        override=True,
+    )
 
     vt_api_key = os.getenv("VT_API_KEY")
     abuse_api_key = os.getenv("ABUSEIPDB_API_KEY")
